@@ -45,6 +45,7 @@ var (
 	reapFlag             bool
 	runsFlag             sliceVar
 	secretsFilesFlag     sliceVar
+	awsSecretsPrefixFlag        string
 	startsFlag           sliceVar
 	stderrTailFlag       sliceVar
 	stdoutTailFlag       sliceVar
@@ -128,6 +129,10 @@ Arguments:
 
        dockerfy --start /bin/sleep 5 -- /bin/service
 	     `)
+	println(`   Retrieve parameters with a given prefix from AWS Parameter store and use them in a template:
+
+       dockerfy --aws-secret-prefix PRODUCTION /bin/echo '{{ AWS_Secret.password }}'
+	     `)
 	println(`For more information, see https://github.com/markriggins/dockerfy `)
 }
 
@@ -149,6 +154,7 @@ func main() {
 	flag.Var(&templatesFlag, "template", "Template (/template:/dest). Can be passed multiple times")
 	flag.Var(&overlaysFlag, "overlay", "overlay (/src:/dest). Can be passed multiple times")
 	flag.Var(&secretsFilesFlag, "secrets-files", "secrets files (path to secrets.env files). Colon-separated list")
+	flag.StringVar(&awsSecretsPrefixFlag, "aws-secret-prefix", "", "Prefix for Secrets stored in the AWS Systems Manager Parameter Store")
 	flag.Var(&runsFlag, "run", "run (cmd [opts] [args] --) Can be passed multiple times")
 	flag.Var(&startsFlag, "start", "start (cmd [opts] [args] --) Can be passed multiple times")
 	flag.BoolVar(&reapFlag, "reap", false, "reap all zombie processes")

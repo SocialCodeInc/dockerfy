@@ -4,6 +4,8 @@ dockerfy -- Utility to initialize docker containers
 **Dockerfy** is a utility program to initialize and control container applications, and also provide some
 missing OS functionality (such as an init process, and reaping zombies etc.)
 
+### Open Source
+Dockerfy is an open-source project under Apache 2.0 license.  This clone is up to date, but the official source has now moved to [SocialCodeInc/dockerfy](https://github.com/SocialCodeInc/dockerfy/)
 
 ##Key Features
 
@@ -143,7 +145,7 @@ If the source path ends with a /, then all subdirectories underneath it will be 
 Overlay sources that do not exist are simply skipped.  The allows you to specify potential sources of content that may or may not exist in the running container.  In the above example if $DEPLOYMENT_ENV environment variable is set to 'local' then the second overlaw will be skipped if there is no corresponding /app/overlays/local source directory, and the container will run with the '_common' html content.
 
 #### Loading Secret Settings
-Secrets can loaded from files by using the `--secrets-files` option or the $SECRETS_FILES environment variable.   The secrets files ending with `.env` must contain simple NAME=VALUE lines, following bash shell conventions for definitions and comments. Leading and trailing quotes will be trimmed from the value.  Secrets files ending with `.json` will be loaded as JSON, and must be `a simple single-level dictionary of strings`
+Secrets can be loaded from files by using the `--secrets-files` option or the $SECRETS_FILES environment variable.   The secrets files ending with `.env` must contain simple NAME=VALUE lines, following bash shell conventions for definitions and comments. Leading and trailing quotes will be trimmed from the value.  Secrets files ending with `.json` will be loaded as JSON, and must be `a simple single-level dictionary of strings`
 
     #
     # These are our secrets
@@ -162,6 +164,21 @@ You can specify multiple secrets files by using a colon to separate the paths, o
 
 For convenience, all secrets files are combined into ~/.secrets/combined_secrets.json inside the ephemeral running
 container for each `--user` account in the users home directory so the program running as the user will have permission to read the values and so JavaScript, Python and Go programs can load the secrets programatically from a single file.  The combined secrets file location is exported as $SECRETS_FILE into the running --start, --run and primary command's environments.
+
+#### Loading Secret Settings from AWS Systems Manager Parameter Store
+**Dockerfy** can also load secrets stored in the AWS Systems Manager [Parameter Store](https://aws.amazon.com/ec2/systems-manager/parameter-store/).
+If you specify an expression like `{{ .AWS_Secret.**VARNAME** }}` in a template then dockerfy will try to fetch the parameter from the AWS Parameter store.
+If the parameter cannot be found (due to lack or permission or because it does not exist) dockerfy falls back to using the value of a corresponding ENVIRONMENT value.
+**Dockerfy** retrieves the decoded values of at most 10 parameters. 
+
+You can store multiple parameters in the Parameter Store with different prefixes. For example, for production and test:
+
+    PROD_DB_PASSWORD = xxx
+    TEST_DB_PASSWORD = yyy
+
+To select a specific parameter that matches the prefix specify option `--aws-secret-prefix PROD_`. 
+You can use `{{ .AWS_Secret.**DB_PASSWORD** }}` in your template, thus without the prefix.
+
 
 ##### Security Concerns
 1. **Reading secrets from files** -- Dockerfy only passes secrets to programs via configuration files to prevent leakage. Secrets could be passed to programs via the environment, but programs use the environment in unpredictable ways, such as logging, or perhaps even dumping their state back to the browser.

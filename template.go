@@ -14,7 +14,7 @@ import (
 )
 
 type TemplateContext struct {
-	env, secrets map[string]string
+	env, secrets, aws_secrets map[string]string
 }
 
 func GetEnvMap() map[string]string {
@@ -56,6 +56,15 @@ func (c *TemplateContext) Secret() map[string]string {
 	c.secrets = getSecrets()
 	return c.secrets
 }
+
+func (c *TemplateContext) AWS_Secret() map[string]string {
+        if c.aws_secrets != nil {
+                return c.aws_secrets
+        }
+        c.aws_secrets = getAWS_Secrets()
+        return c.aws_secrets
+}
+
 
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)

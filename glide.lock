@@ -1,10 +1,38 @@
-hash: b3ee1b2fbddde827859f48dbe566d88657d373bad19cd0290ad4483f88ddf04e
-updated: 2016-10-05T09:13:41.371137555-04:00
+hash: f7c96fff6dfa8e27fee8c4885fc2afd882dcc13ee2892d613a863cd59724605b
+updated: 2017-03-15T12:52:02.768149871+01:00
 imports:
-- name: github.com/golang/lint
-  version: 55ae771cfa82f3846897c972e262ed5d54d47d48
+- name: github.com/aws/aws-sdk-go
+  version: 62c16d8bf2fd6ee59f2bf11ae8268d045470ccf6
   subpackages:
-  - golint
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - private/protocol
+  - private/protocol/json/jsonutil
+  - private/protocol/jsonrpc
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/xml/xmlutil
+  - service/ssm
+  - service/sts
+  - services/ssm
+  - session
+- name: github.com/go-ini/ini
+  version: 98c45284d68a05a0e0a576de574bd975946ef9ad
 - name: github.com/hpcloud/tail
   version: a30252cb686a21eb2d0b98132633053ec2f7f1e5
   subpackages:
@@ -12,6 +40,8 @@ imports:
   - util
   - watch
   - winfile
+- name: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: golang.org/x/net
   version: ffe101cce3477a6c6d8f0754d103bb0a84ec1266
   subpackages:
@@ -24,4 +54,4 @@ imports:
   version: 7be54206639f256967dd82fa767397ba5f8f48f5
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
-devImports: []
+testImports: []
