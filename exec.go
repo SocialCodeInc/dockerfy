@@ -11,15 +11,17 @@ import (
 	"golang.org/x/net/context"
 )
 
-func runCmd(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, cancel_when_finished bool) {
+func runCmd(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, cancel_when_finished bool, skip_secrets bool) {
 	defer wg.Done()
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := copySecretsFiles(cmd); err != nil {
-		log.Fatalf("Could not copy secrets files", err)
+	if !skip_secrets {
+		if err := copySecretsFiles(cmd); err != nil {
+			log.Fatalf("Could not copy secrets files", err)
+		}
 	}
 
 	for i, arg := range cmd.Args {
