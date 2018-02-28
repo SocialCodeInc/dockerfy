@@ -12,13 +12,14 @@ import (
 )
 
 type Commands struct {
+	before     []*exec.Cmd         // list of commands to run BEFORE anything else
 	run        []*exec.Cmd         // list of commands to run BEFORE the primar
 	start      []*exec.Cmd         // list of services to start
 	credential *syscall.Credential // credentials for primary command
 }
 
 //
-// Removes --start and --run commands options and arguments from os.Args
+// Removes --before and --start and --run commands options and arguments from os.Args
 // Removes --user <uid|username> options and applies the credentials to following
 //           start or run commands and primary command
 // Returns array of removed run commands, and an array of removed start commands
@@ -44,6 +45,13 @@ func removeCommandsFromOsArgs() Commands {
         // docker-compose.yml files are buggy on \ continuation characters
         arg_i := strings.TrimSpace(os.Args[i])
 		switch {
+
+		case ("--before" == arg_i || "-before" == arg_i) && cmd == nil:
+			cmd = &exec.Cmd{Stdout: os.Stdout,
+				Stderr:      os.Stderr,
+				SysProcAttr: &syscall.SysProcAttr{Credential: commands.credential}}
+			commands.before = append(commands.before, cmd)
+
 		case ("--start" == arg_i || "-start" == arg_i) && cmd == nil:
 			cmd = &exec.Cmd{Stdout: os.Stdout,
 				Stderr:      os.Stderr,
@@ -95,7 +103,7 @@ func removeCommandsFromOsArgs() Commands {
 						cmd.Path, _ = exec.LookPath(cmd.Path)
 					}
 				}
-                // Only trim our own args, not --run cmd's or --start cmd's
+        // Only trim our own args, not --before cmd's or not --run cmd's or --start cmd's
 				cmd.Args = append(cmd.Args, os.Args[i])
 			} else {
 				newOsArgs = append(newOsArgs, arg_i)
@@ -106,7 +114,7 @@ func removeCommandsFromOsArgs() Commands {
 		log.Fatalln("need a username or uid after the --user flag")
 	}
 	if cmd != nil {
-		log.Fatalf("need a command after the --start or --run flag")
+		log.Fatalf("need a command after the --before or --start or --run flag")
 	}
 	os.Args = newOsArgs
 

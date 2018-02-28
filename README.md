@@ -28,6 +28,7 @@ Pre-built binaries are available on our [Releases](https://github.com/SocialCode
     FROM socialcode/nginx-with-dockerfy
 
     ENTRYPOINT [ "dockerfy",                                                                            \
+                    "--before", "echo 'Running before anything else'", "--",                         \
                     "--secrets-files", "/secrets/secrets.env",                                          \
                     "--overlay", "/app/overlays/{{ .Env.DEPLOYMENT_ENV }}/html/:/usr/share/nginx/html",         \
                     "--template", "/app/nginx.conf.tmpl:/etc/nginx/nginx.conf",                         \
@@ -53,6 +54,7 @@ Pre-built binaries are available on our [Releases](https://github.com/SocialCode
         - dockerfy
 
       command: [
+        "--before", "echo 'Running before anything else'", "--",
         "--overlay", "/app/overlays/{{ .Env.DEPLOYMENT_ENV }}/html/:/usr/share/nginx/html",
         "--template", "/app/nginx.conf.tmpl:/etc/nginx/nginx.conf",
         "--wait", "tcp://{{ .Env.MYSQLSERVER }}:{{ .Env.MYSQLPORT }}", "--timeout", "60s",
@@ -87,7 +89,7 @@ Note that the unexpanded argument '{{ .Secret.DB_PASSWORD }}', would be visible 
 
 Note that ${VAR_NAME}'s are NOT expanded by dockerfy because docker-compose and ecs-cli also expand environment variables inside yaml files.  The {{ .Env.VAR_NAME }} form passes through easily, as long as it is inside a singly-quoted string
 
-The "--" argument is used to signify the end of arguments for a --start or --run command.
+The "--" argument is used to signify the end of arguments for a --before or --start or --run command.
 
 
 # Typical Use-Case
@@ -329,6 +331,14 @@ You can specify multiple dependancies by repeating the --wait flag.  If the depe
 NOTE: If for some reason dockerfy cannot resolve the DNS names for links try exporting GODEBUG=netdns=cgo to force dockerfy to use cgo for DNS resolution.  This is a known issue on Docker version 1.12.0-rc3, build 91e29e8, experimental for OS X.
 
 ### Running Commands
+The `--before` option gives you the opportunity to run commands before everything else, secrets and templates has **not** been processed at this point.  You can run anything you like, even bash scripts like this:
+
+	$ dockerfy  \
+		--before bash -c "echo 'Running before anything else'" -- \
+        nginx -g "daemon off;"
+
+All options up to but not including the '--' will be passed to the command.  You can run as many commands as you like, they will be run in the same order as how they were provided on the command line, and all commands must finish **successfully** or **dockerfy** will exit and your primary program will never run.
+
 The `--run` option gives you the opportunity to run commands **after** the overlays, secrets and templates have been processed, but **before** the primary program begins.  You can run anything you like, even bash scripts like this:
 
 	$ dockerfy  \
@@ -409,4 +419,3 @@ Dockerfy is based on the work of others, relying heavily on jwilder's `dockerize
 
 TODO:
     convert everything to camelCase
-

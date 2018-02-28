@@ -43,6 +43,7 @@ var (
 	logPollFlag          bool
 	reapPollIntervalFlag time.Duration
 	reapFlag             bool
+	beforesFlag          sliceVar
 	runsFlag             sliceVar
 	secretsFilesFlag     sliceVar
 	startsFlag           sliceVar
@@ -50,8 +51,8 @@ var (
 	stdoutTailFlag       sliceVar
 	templatesFlag        sliceVar
 	usersFlag            sliceVar
-    verboseFlag          bool
-    debugFlag            bool
+	verboseFlag          bool
+	debugFlag            bool
 	versionFlag          bool
 	waitFlag             hostFlagsVar
 	waitTimeoutFlag      time.Duration
@@ -114,6 +115,12 @@ Arguments:
 
        dockerfy --reap command
 	     `)
+
+  println(`   Run /bin/echo before anything runs:
+
+      dockerfy --before /bin/echo -e "Starting -- command\n\n"
+	     `)
+
 	println(`   Run /bin/echo before the main command runs:
 
        dockerfy --run /bin/echo -e "Starting -- command\n\n"
@@ -149,11 +156,12 @@ func main() {
 	flag.Var(&templatesFlag, "template", "Template (/template:/dest). Can be passed multiple times")
 	flag.Var(&overlaysFlag, "overlay", "overlay (/src:/dest). Can be passed multiple times")
 	flag.Var(&secretsFilesFlag, "secrets-files", "secrets files (path to secrets.env files). Colon-separated list")
+	flag.Var(&beforesFlag, "before", "before (cmd [opts] [args] --) Can be passed multiple times")
 	flag.Var(&runsFlag, "run", "run (cmd [opts] [args] --) Can be passed multiple times")
 	flag.Var(&startsFlag, "start", "start (cmd [opts] [args] --) Can be passed multiple times")
 	flag.BoolVar(&reapFlag, "reap", false, "reap all zombie processes")
-    flag.BoolVar(&verboseFlag, "verbose", false, "verbose output")
-    flag.BoolVar(&debugFlag, "debug", false, "debugging output")
+	flag.BoolVar(&verboseFlag, "verbose", false, "verbose output")
+	flag.BoolVar(&debugFlag, "debug", false, "debugging output")
 	flag.Var(&stdoutTailFlag, "stdout", "Tails a file to stdout. Can be passed multiple times")
 	flag.Var(&stderrTailFlag, "stderr", "Tails a file to stderr. Can be passed multiple times")
 	flag.StringVar(&delimsFlag, "delims", "", `template tag delimiters. default "{{":"}}" `)
@@ -198,6 +206,30 @@ func main() {
 		if len(delims) != 2 {
 			log.Fatalf("bad delimiters argument: %s. expected \"left:right\"", delimsFlag)
 		}
+	}
+
+	// Setup context
+	ctx, cancel = context.WithCancel(context.Background())
+
+	// Process -befores flags
+	for _, cmd := range commands.before {
+
+		if verboseFlag {
+			log.Printf("Pre-Running: `%s`\n", toString(cmd))
+		}
+		// Run to completion, but do not cancel our ctx context unless we fail
+		wg.Add(1)
+		go runCmd(ctx, func() {
+			log.Printf("--before command `%s` finished\n", toString(cmd))
+			if exitCode != 0 {
+				cancel()
+			}
+		}, cmd, false, true /*cancel_when_finished + skip_secrets*/)
+		wg.Wait()
+        if exitCode != 0 {
+            cancel()
+            os.Exit(exitCode)
+        }
 	}
 
 	// Overlay files from src --> dst
@@ -257,9 +289,6 @@ func main() {
 
 	waitForDependencies()
 
-	// Setup context
-	ctx, cancel = context.WithCancel(context.Background())
-
 	// Process -run flags
 	for _, cmd := range commands.run {
 
@@ -273,7 +302,7 @@ func main() {
 			if exitCode != 0 {
 				cancel()
 			}
-		}, cmd, false /*cancel_when_finished*/)
+		}, cmd, false, false /*cancel_when_finished*/)
 		wg.Wait()
         if exitCode != 0 {
             cancel()
@@ -310,7 +339,7 @@ func main() {
 		go runCmd(ctx, func() {
 			log.Printf("Service `%s` cancelled\n", toString(cmd))
 			cancel()
-		}, cmd, true /*cancel_when_finished*/)
+		}, cmd, true, false /*cancel_when_finished*/)
 	}
 
 	if flag.NArg() > 0 {
@@ -333,7 +362,7 @@ func main() {
 				log.Printf("Primary Command `%s` finished\n", cmdString)
 			}
 			cancel()
-		}, primary_command, true /*cancel_when_finished*/)
+		}, primary_command, true, false /*cancel_when_finished*/)
 
         //TODO -- catch signals and log the fact that dockerfy itself was terminated
 	} else {
